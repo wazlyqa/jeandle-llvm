@@ -1,5 +1,7 @@
 //===- llvm/CallingConv.h - LLVM Calling Conventions ------------*- C++ -*-===//
 //
+// Copyright (c) 2025, the Jeandle-LLVM Authors. All Rights Reserved.
+//
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -296,6 +298,9 @@ namespace CallingConv {
     /// Calling convention used for CHERIoT for cross-library calls to a
     /// stateless compartment.
     CHERIoT_LibraryCall = 127,
+    /// Calling convention which is compatible with Hotspot JIT compiler's
+    /// calling convention.
+    Hotspot_JIT = 128,
 
     /// The highest possible ID. Must be some 2^k - 1.
     MaxID = 1023

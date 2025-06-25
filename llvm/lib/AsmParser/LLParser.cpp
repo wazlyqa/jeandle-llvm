@@ -1,5 +1,7 @@
 //===-- LLParser.cpp - Parser Class ---------------------------------------===//
 //
+// Copyright (c) 2025, the Jeandle-LLVM Authors. All Rights Reserved.
+//
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -2226,6 +2228,7 @@ void LLParser::parseOptionalDLLStorageClass(unsigned &Res) {
 ///   ::= 'graalcc'
 ///   ::= 'riscv_vector_cc'
 ///   ::= 'riscv_vls_cc'
+///   ::= 'hotspotcc'
 ///   ::= 'cc' UINT
 ///
 bool LLParser::parseOptionalCallingConv(unsigned &CC) {
@@ -2344,6 +2347,9 @@ bool LLParser::parseOptionalCallingConv(unsigned &CC) {
     break;
   case lltok::kw_cheriot_librarycallcc:
     CC = CallingConv::CHERIoT_LibraryCall;
+    break;
+  case lltok::kw_hotspotcc:
+    CC = CallingConv::Hotspot_JIT;
     break;
   case lltok::kw_cc: {
       Lex.Lex();
