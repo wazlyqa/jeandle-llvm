@@ -2510,11 +2510,8 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
 
   // Hotspot always save LR & FP for stack unwinding
   if (MF.getFunction().getCallingConv() == CallingConv::Hotspot_JIT) {
-    if (!SavedRegs.test(AArch64::FP))
-      SavedRegs.set(AArch64::FP);
-
-    if (!SavedRegs.test(AArch64::LR))
-      SavedRegs.set(AArch64::LR);
+    SavedRegs.set(AArch64::FP);
+    SavedRegs.set(AArch64::LR);
   }
 
   MCRegister BasePointerReg =

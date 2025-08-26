@@ -179,7 +179,7 @@ AArch64RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
                               : CSR_Darwin_AArch64_CXX_TLS_SaveList;
 
   case CallingConv::Hotspot_JIT:
-    return CSR_AArch64_Hotspot_SaveList;
+    return CSR_AArch64_Hotspot_JIT_SaveList;
     // FIXME: this likely should be a `report_fatal_error` condition, however,
     // that would be a departure from the previously implemented behaviour.
     LLVM_FALLTHROUGH;
@@ -320,7 +320,7 @@ AArch64RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
     return SCS ? CSR_AArch64_RT_AllRegs_SCS_RegMask
                : CSR_AArch64_RT_AllRegs_RegMask;
   if (CC == CallingConv::Hotspot_JIT)
-    return CSR_AArch64_Hotspot_RegMask;
+    return CSR_AArch64_Hotspot_JIT_RegMask;
 
   return SCS ? CSR_AArch64_AAPCS_SCS_RegMask : CSR_AArch64_AAPCS_RegMask;
 }
@@ -693,7 +693,7 @@ bool AArch64RegisterInfo::isArgumentRegister(const MachineFunction &MF,
   case CallingConv::GHC:
     return HasReg(CC_AArch64_GHC_ArgRegs, Reg);
   case CallingConv::Hotspot_JIT:
-    return HasReg(CC_AArch64_Hotspot_ArgRegs, Reg);
+    return HasReg(CC_AArch64_Hotspot_JIT_ArgRegs, Reg);
   case CallingConv::PreserveNone:
     if (!MF.getFunction().isVarArg())
       return HasReg(CC_AArch64_Preserve_None_ArgRegs, Reg);
