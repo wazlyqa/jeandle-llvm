@@ -187,6 +187,7 @@
 #include "llvm/IR/SafepointIRVerifier.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IRPrinter/IRPrintingPasses.h"
+#include "llvm/Jeandle/Pipeline.h"
 #include "llvm/Passes/OptimizationLevel.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/CommandLine.h"
@@ -266,6 +267,7 @@
 #include "llvm/Transforms/Instrumentation/ThreadSanitizer.h"
 #include "llvm/Transforms/Instrumentation/TypeSanitizer.h"
 #include "llvm/Transforms/Jeandle/JavaOperationLower.h"
+#include "llvm/Transforms/Jeandle/TLSPointerRewrite.h"
 #include "llvm/Transforms/ObjCARC.h"
 #include "llvm/Transforms/Scalar/ADCE.h"
 #include "llvm/Transforms/Scalar/AlignmentFromAssumptions.h"
@@ -388,6 +390,8 @@
 #include <optional>
 
 using namespace llvm;
+
+static const Regex DefaultAliasRegex("^(jeandle)<(O[0123sz])>$");
 
 cl::opt<bool> llvm::PrintPipelinePasses(
     "print-pipeline-passes",
@@ -1736,6 +1740,19 @@ Expected<FatLTOOptions> parseFatLTOOptions(StringRef Params) {
   return Result;
 }
 
+Expected<int> parseJavaOperationLowerOptions(StringRef Params) {
+  int Result;
+  if (!Params.consume_front("phase=") || Params.getAsInteger(0, Result)) {
+    return make_error<StringError>(
+        formatv("invalid argument to JavaOperationLower pass "
+                "parameter: '{0}' ",
+                Params)
+            .str(),
+        inconvertibleErrorCode());
+  }
+  return Result;
+}
+
 } // namespace
 
 /// Tests whether registered callbacks will accept a given pass name.
@@ -1759,6 +1776,10 @@ static bool callbacksAcceptPassName(StringRef Name, CallbacksT &Callbacks) {
 
 template <typename CallbacksT>
 static bool isModulePassName(StringRef Name, CallbacksT &Callbacks) {
+  // TODO: Manually handle aliases for jeandle pipeline. Treat it as normal pass later.
+  if (Name.starts_with("jeandle"))
+    return DefaultAliasRegex.match(Name);
+
   StringRef NameNoBracket = Name.take_until([](char C) { return C == '<'; });
 
   // Explicitly handle pass manager names.
@@ -2016,6 +2037,24 @@ Error PassBuilder::parseModulePass(ModulePassManager &MPM,
         formatv("invalid use of '{}' pass as module pipeline", Name).str(),
         inconvertibleErrorCode());
     ;
+  }
+
+  // TODO: Manually handle aliases for jeandle pipeline. Treat it as normal pass later.
+  if (Name.starts_with("jeandle")) {
+    SmallVector<StringRef, 3> Matches;
+    if (!DefaultAliasRegex.match(Name, &Matches))
+      return make_error<StringError>(
+          formatv("unknown default pipeline alias '{0}'", Name).str(),
+          inconvertibleErrorCode());
+
+    assert(Matches.size() == 3 && "Must capture two matched strings!");
+
+    OptimizationLevel L = *parseOptLevel(Matches[2]);
+
+    if (Matches[1] == "jeandle") {
+      jeandle::Pipeline::buildJeandlePipeline(MPM, *this, L);
+    }
+    return Error::success();
   }
 
   // Finally expand the basic registered passes from the .inc file.

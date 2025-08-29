@@ -291,6 +291,9 @@ static cl::list<std::string>
     PassPlugins("load-pass-plugin",
                 cl::desc("Load passes from plugin library"));
 
+static cl::opt<bool> RunJeandle("jeandle",
+                                cl::desc("Run Jeandle pass pipeline"));
+
 //===----------------------------------------------------------------------===//
 // CodeGen-related helper functions.
 //
@@ -742,6 +745,8 @@ optMain(int argc, char **argv,
       Pipeline = "default<Os>";
     if (OptLevelOz)
       Pipeline = "default<Oz>";
+    if (RunJeandle)
+      Pipeline = "jeandle<O3>";
     OutputKind OK = OK_NoOutput;
     if (!NoOutput)
       OK = OutputAssembly
