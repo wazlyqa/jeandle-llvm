@@ -1,7 +1,5 @@
 //===- lib/MC/MCFragment.cpp - Assembler Fragment Implementation ----------===//
 //
-// Copyright (c) 2025, the Jeandle-LLVM Authors. All Rights Reserved.
-//
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -61,9 +59,6 @@ LLVM_DUMP_METHOD void MCFragment::dump() const {
   case MCFragment::FT_SymbolId:      OS << "SymbolId"; break;
   case MCFragment::FT_CVInlineLines: OS << "CVInlineLineTable"; break;
   case MCFragment::FT_CVDefRange:    OS << "CVDefRangeTable"; break;
-  case MCFragment::FT_HotspotPatchPoint:
-    OS << "FT_HotspotPatchPoint";
-    break;
     // clang-format on
   }
 
@@ -195,29 +190,6 @@ LLVM_DUMP_METHOD void MCFragment::dump() const {
     }
     break;
   }
-  case MCFragment::FT_HotspotPatchPoint: {
-    OS << "\n       ";
-    break;
-  }
   }
 }
 #endif
-
-unsigned MCHotspotPatchPointFragment::getSize(unsigned Offset) const {
-  return alignTo(Size + Offset % Alignment.value(), Alignment) -
-         Offset % Alignment.value();
-}
-
-void MCHotspotPatchPointFragment::emit(MCAsmBackend &MAB, raw_ostream &OS,
-                                       unsigned Offset) const {
-  if (getSize(Offset) - Size > 0 &&
-      !MAB.writeNopData(OS, getSize(Offset) - Size, STI)) {
-    report_fatal_error("unable to write nop sequence of " +
-                       Twine(getSize(Offset) - Size) + " bytes");
-  }
-
-  if (!MAB.writeNopData(OS, Size, STI)) {
-    report_fatal_error("unable to write nop sequence of " + Twine(Size) +
-                       " bytes");
-  }
-}
