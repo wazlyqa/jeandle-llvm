@@ -23561,6 +23561,7 @@ SDValue RISCVTargetLowering::LowerFormalArguments(
     CC_VLS_CASE(32768)
     CC_VLS_CASE(65536)
 #undef CC_VLS_CASE
+  case CallingConv::Hotspot_JIT:
     break;
   case CallingConv::GHC:
     if (Subtarget.hasStdExtE())
@@ -23621,7 +23622,9 @@ SDValue RISCVTargetLowering::LowerFormalArguments(
 
   if (CallConv == CallingConv::GHC)
     CCInfo.AnalyzeFormalArguments(Ins, CC_RISCV_GHC);
-  else
+  else if (CallConv == CallingConv::Hotspot_JIT) {
+    analyzeInputArgs(MF, CCInfo, Ins, /*IsRet=*/false, CC_RISCV_Hotspot_JIT);
+  } else
     analyzeInputArgs(MF, CCInfo, Ins, /*IsRet=*/false,
                      CallConv == CallingConv::Fast ? CC_RISCV_FastCC
                                                    : CC_RISCV);
@@ -23835,6 +23838,9 @@ SDValue RISCVTargetLowering::LowerCall(CallLoweringInfo &CLI,
     if (Subtarget.hasStdExtE())
       reportFatalUsageError("GHC calling convention is not supported on RVE!");
     ArgCCInfo.AnalyzeCallOperands(Outs, CC_RISCV_GHC);
+  } else if (CallConv == CallingConv::Hotspot_JIT) {
+    analyzeOutputArgs(MF, ArgCCInfo, Outs, /*IsRet=*/false, &CLI,
+                      CC_RISCV_Hotspot_JIT);
   } else
     analyzeOutputArgs(MF, ArgCCInfo, Outs, /*IsRet=*/false, &CLI,
                       CallConv == CallingConv::Fast ? CC_RISCV_FastCC
