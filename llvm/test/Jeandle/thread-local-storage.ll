@@ -2,7 +2,7 @@
 
 ; CHECK: %tls.base = call i64 @llvm.read_register.i64(metadata !0)
 ; CHECK-NEXT: %tls.base.ptr = inttoptr i64 %tls.base to ptr addrspace(2)
-; CHECK-NEXT: %.tls.ptr = getelementptr inbounds i8, ptr addrspace(2) %tls.base.ptr, i64 1160
+; CHECK-NEXT: %.tls.ptr = getelementptr inbounds i8, ptr addrspace(2) %tls.base.ptr, i64 ptrtoint (ptr addrspace(2) inttoptr (i64 1160 to ptr addrspace(2)) to i64)
 ; CHECK-NEXT: store i64 0, ptr addrspace(2) %.tls.ptr, align 8
 ; CHECK-NEXT: %0 = load i64, ptr addrspace(2) %.tls.ptr, align 8
 ; CHECK-NEXT: %1 = inttoptr i64 984 to ptr addrspace(2)
