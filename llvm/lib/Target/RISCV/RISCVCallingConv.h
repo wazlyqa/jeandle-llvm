@@ -37,8 +37,8 @@ bool CC_RISCV_GHC(unsigned ValNo, MVT ValVT, MVT LocVT,
 
 bool CC_RISCV_Hotspot_JIT(unsigned ValNo, MVT ValVT, MVT LocVT,
                           CCValAssign::LocInfo LocInfo,
-                          ISD::ArgFlagsTy ArgFlags, CCState &State,
-                          bool IsFixed, bool IsRet, Type *OrigTy);
+                          ISD::ArgFlagsTy ArgFlags, CCState &State, bool IsRet,
+                          Type *OrigTy);
 
 namespace RISCV {
 

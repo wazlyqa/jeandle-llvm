@@ -825,7 +825,7 @@ bool llvm::CC_RISCV_GHC(unsigned ValNo, MVT ValVT, MVT LocVT,
 bool llvm::CC_RISCV_Hotspot_JIT(unsigned ValNo, MVT ValVT, MVT LocVT,
                                 CCValAssign::LocInfo LocInfo,
                                 ISD::ArgFlagsTy ArgFlags, CCState &State,
-                                bool IsFixed, bool IsRet, Type *OrigTy) {
+                                bool IsRet, Type *OrigTy) {
 
   static const MCPhysReg RegList[] = {RISCV::X11, RISCV::X12, RISCV::X13,
                                       RISCV::X14, RISCV::X15, RISCV::X16,
@@ -838,8 +838,7 @@ bool llvm::CC_RISCV_Hotspot_JIT(unsigned ValNo, MVT ValVT, MVT LocVT,
     }
   }
 
-  if (!CC_RISCV(ValNo, ValVT, LocVT, LocInfo, ArgFlags, State, IsFixed, IsRet,
-                OrigTy))
+  if (!CC_RISCV(ValNo, ValVT, LocVT, LocInfo, ArgFlags, State, IsRet, OrigTy))
     return false;
 
   return true; // CC didn't match.
