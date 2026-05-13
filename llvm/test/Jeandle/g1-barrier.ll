@@ -49,4 +49,4 @@ entry:
 
 attributes #0 = { noinline "lower-phase"="1" }
 
-!java_method_compilation = !{}
+!java-method-compilation = !{}
