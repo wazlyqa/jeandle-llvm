@@ -269,6 +269,8 @@
 #include "llvm/Transforms/Jeandle/ConstantFieldFolding.h"
 #include "llvm/Transforms/Jeandle/InsertGCBarriers.h"
 #include "llvm/Transforms/Jeandle/JavaOperationLower.h"
+#include "llvm/Transforms/Jeandle/JeandleGCNarrowOopAnnotation.h"
+#include "llvm/Transforms/Jeandle/NarrowOopOpt.h"
 #include "llvm/Transforms/Jeandle/RepeatedConstantFolding.h"
 #include "llvm/Transforms/Jeandle/TLSPointerRewrite.h"
 #include "llvm/Transforms/Jeandle/TypeCheckElimination.h"
