@@ -2,7 +2,6 @@ add_llvm_component_library(LLVMJeandleTransforms
   ConstantFieldFolding.cpp
   InsertGCBarriers.cpp
   JavaOperationLower.cpp
-  JeandleGCNarrowOopAnnotation.cpp
   NarrowOopOpt.cpp
   RepeatedConstantFolding.cpp
   TLSPointerRewrite.cpp
