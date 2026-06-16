@@ -1,6 +1,8 @@
 add_llvm_component_library(LLVMJeandleTransforms
+  ConstantFieldFolding.cpp
   InsertGCBarriers.cpp
   JavaOperationLower.cpp
+  RepeatedConstantFolding.cpp
   TLSPointerRewrite.cpp
   TypeCheckElimination.cpp
 
@@ -10,4 +12,6 @@ add_llvm_component_library(LLVMJeandleTransforms
   LINK_COMPONENTS
   Analysis
   Core
+  Scalar
+  TransformUtils
   )
