@@ -51,6 +51,9 @@ ModulePassManager Pipeline::buildJeandlePipeline(PassBuilder &PB,
   PM.addPass(JavaOperationLower(1));
   PM.addPass(createModuleToFunctionPassAdaptor(TLSPointerRewrite()));
   PM.addPass(std::move(PB.buildPerModuleDefaultPipeline(level)));
+  // Expand oop encode/decode and GC barriers after O3 to avoid temporary GC
+  // values crossing safepoints during optimization.
+  PM.addPass(JavaOperationLower(9));
   PM.addPass(RewriteStatepointsForGC());
   return PM;
 }
