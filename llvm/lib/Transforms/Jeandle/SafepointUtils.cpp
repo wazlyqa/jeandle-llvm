@@ -177,19 +177,78 @@ bool llvm::jeandle::isMarkedStripMinedInner(Loop &L) {
   return llvm::any_of(*OuterLatch, isStripMinedPoll);
 }
 
+static bool positiveZExtMinusOneProvablyLessThan(
+    const SCEV *Count, uint64_t ExclusiveLimit, const Instruction *CtxI,
+    Loop &L, ScalarEvolution &SE) {
+  const auto *Add = dyn_cast<SCEVAddExpr>(Count);
+  if (!Add || Add->getNumOperands() != 2)
+    return false;
+
+  const SCEVZeroExtendExpr *ZExt = nullptr;
+  const SCEVConstant *Offset = nullptr;
+  for (const SCEV *Op : Add->operands()) {
+    ZExt = ZExt ? ZExt : dyn_cast<SCEVZeroExtendExpr>(Op);
+    Offset = Offset ? Offset : dyn_cast<SCEVConstant>(Op);
+  }
+  if (!ZExt || !Offset || !Offset->getAPInt().isAllOnes())
+    return false;
+
+  const SCEV *Source = ZExt->getOperand();
+  const SCEV *Zero = SE.getZero(Source->getType());
+  if (!(SE.isKnownPredicateAt(ICmpInst::ICMP_SGT, Source, Zero, CtxI) ||
+        SE.isLoopEntryGuardedByCond(&L, ICmpInst::ICMP_SGT, Source, Zero)))
+    return false;
+
+  APInt SignedMax = SE.getSignedRange(Source).getSignedMax();
+  if (SignedMax.isNegative())
+    return false;
+  unsigned BW = SignedMax.getBitWidth();
+  if (BW < 64 && !isUIntN(BW, ExclusiveLimit))
+    return true;
+  return SignedMax.ule(APInt(BW, ExclusiveLimit));
+}
+
+static bool scevProvablyLessThan(const SCEV *Count, uint64_t ExclusiveLimit,
+                                const Instruction *CtxI, Loop &L,
+                                ScalarEvolution &SE) {
+  if (!isa<SCEVCouldNotCompute>(Count) && Count->getType()->isIntegerTy()) {
+    unsigned BW = SE.getTypeSizeInBits(Count->getType());
+    if (BW < 64 && !isUIntN(BW, ExclusiveLimit))
+      return true;
+    const SCEV *Limit = SE.getConstant(Count->getType(), ExclusiveLimit);
+    if (SE.isKnownPredicate(ICmpInst::ICMP_ULT, Count, Limit) ||
+        SE.isKnownPredicateAt(ICmpInst::ICMP_ULT, Count, Limit, CtxI) ||
+        SE.isLoopEntryGuardedByCond(&L, ICmpInst::ICMP_ULT, Count, Limit))
+      return true;
+  }
+  // IndVarSimplify commonly rewrites a positive i32 trip count N to an i64
+  // backedge count `zext(N) - 1`.  Re-establish the non-underflow fact from
+  // the dominating entry guard, then use N's stable signed range.
+  return positiveZExtMinusOneProvablyLessThan(Count, ExclusiveLimit, CtxI, L,
+                                              SE);
+}
+
 bool llvm::jeandle::backedgeCountProvablyLessThan(Loop &L,
                                                   uint64_t ExclusiveLimit,
                                                   ScalarEvolution &SE) {
-  const SCEV *MaxBTC = SE.getSymbolicMaxBackedgeTakenCount(&L);
-  if (!isa<SCEVCouldNotCompute>(MaxBTC) && MaxBTC->getType()->isIntegerTy()) {
-    unsigned BW = SE.getTypeSizeInBits(MaxBTC->getType());
-    if (BW < 64 && !isUIntN(BW, ExclusiveLimit))
-      return true;
-    const SCEV *Limit = SE.getConstant(MaxBTC->getType(), ExclusiveLimit);
-    if (SE.isKnownPredicate(ICmpInst::ICMP_ULT, MaxBTC, Limit) ||
-        SE.isKnownPredicateAt(ICmpInst::ICMP_ULT, MaxBTC, Limit,
-                              L.getHeader()->getTerminator()) ||
-        SE.isLoopEntryGuardedByCond(&L, ICmpInst::ICMP_ULT, MaxBTC, Limit))
+  const Instruction *HeaderTerminator = L.getHeader()->getTerminator();
+  if (scevProvablyLessThan(SE.getSymbolicMaxBackedgeTakenCount(&L),
+                          ExclusiveLimit, HeaderTerminator, L, SE))
+    return true;
+
+  // A loop can have several exits whose merged symbolic maximum is less
+  // precise than an individual exit.  For a computable exit count,
+  // ScalarEvolution guarantees that the loop takes some exit before that
+  // count's next backedge, so one provable exit bound bounds all backedges.
+  SmallVector<BasicBlock *, 4> ExitingBlocks;
+  L.getExitingBlocks(ExitingBlocks);
+  for (BasicBlock *Exiting : ExitingBlocks) {
+    if (scevProvablyLessThan(
+            SE.getExitCount(&L, Exiting, ScalarEvolution::SymbolicMaximum),
+            ExclusiveLimit, HeaderTerminator, L, SE) ||
+        scevProvablyLessThan(
+            SE.getExitCount(&L, Exiting, ScalarEvolution::ConstantMaximum),
+            ExclusiveLimit, HeaderTerminator, L, SE))
       return true;
   }
 
